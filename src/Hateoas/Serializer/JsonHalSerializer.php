@@ -44,7 +44,18 @@ class JsonHalSerializer implements JsonSerializerInterface
     {
         $serializedEmbeddeds = array();
         foreach ($embeddeds as $embedded) {
-            $serializedEmbeddeds[$embedded->getRel()] = $embedSerializer->serialize($embedded->getData(), $embedded);
+            $found = $embedSerializer->serialize($embedded->getData(), $embedded);
+
+            if ($found === null) {
+                continue;
+            }
+
+            $serializedEmbeddeds[$embedded->getRel()] = $found;
+        }
+
+        // if empty, then do not add _embedded
+        if (count($serializedEmbeddeds) === 0) {
+            return;
         }
 
         $visitor->addData('_embedded', $serializedEmbeddeds);
