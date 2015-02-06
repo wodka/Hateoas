@@ -93,6 +93,10 @@ class JsonEventSubscriber implements EventSubscriberInterface, JMSSerializerMeta
     {
         $object  = $event->getObject();
         $context = $event->getContext();
+        
+        // This fixes the $context->getDepth()
+        $context->startVisiting($object);
+        $context->pushClassMetadata($this->serializerMetadataFactory->getMetadataForClass($event->getType()['name']));
 
         $embeddeds = $this->embeddedsFactory->create($object, $context);
         $links     = $this->linksFactory->create($object, $context);
@@ -105,14 +109,10 @@ class JsonEventSubscriber implements EventSubscriberInterface, JMSSerializerMeta
         }
 
         if (count($embeddeds) > 0) {
-            // This fixes the $context->getDepth()
-            $context->startVisiting($object);
-            $context->pushClassMetadata($this->serializerMetadataFactory->getMetadataForClass($event->getType()['name']));
-
             $this->jsonSerializer->serializeEmbeddeds($embeddeds, $event->getVisitor(), new EmbedSerializer($context));
-
-            $context->stopVisiting($object);
-            $context->popClassMetadata();
         }
+        
+        $context->stopVisiting($object);
+        $context->popClassMetadata();
     }
 }
