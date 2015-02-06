@@ -72,6 +72,11 @@ class XmlEventSubscriber implements EventSubscriberInterface, JMSSerializerMetad
     {
         $object    = $event->getObject();
         $context   = $event->getContext();
+        
+        // This fixes the $context->getDepth()
+        $context->startVisiting($object);
+        $context->pushClassMetadata($this->serializerMetadataFactory->getMetadataForClass($event->getType()['name']));
+            
         $embeddeds = $this->embeddedsFactory->create($event->getObject(), $event->getContext());
         $links     = $this->linksFactory->create($event->getObject(), $event->getContext());
 
@@ -80,14 +85,10 @@ class XmlEventSubscriber implements EventSubscriberInterface, JMSSerializerMetad
         }
 
         if (count($embeddeds) > 0) {
-            // This fixes the $context->getDepth()
-            $context->startVisiting($object);
-            $context->pushClassMetadata($this->serializerMetadataFactory->getMetadataForClass($event->getType()['name']));
-
             $this->xmlSerializer->serializeEmbeddeds($embeddeds, $event->getVisitor(), new EmbedSerializer($context));
-
-            $context->stopVisiting($object);
-            $context->popClassMetadata();
         }
+        
+        $context->stopVisiting($object);
+        $context->popClassMetadata();
     }
 }
